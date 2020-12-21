@@ -18,12 +18,14 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/Dana-Team/GPU-Monitoring/types"
 )
 
 // PodReconciler reconciles a Pod object
@@ -40,12 +42,23 @@ func (r *PodReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	_ = r.Log.WithValues("pod", req.NamespacedName)
 
-	// your logic here
-
 	return ctrl.Result{}, nil
 }
 
+
 func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(&corev1.Pod{}, types.NodeKey, func(obj runtime.Object) []string {
+		// grab the job object, extract the owner...
+		pod := obj.(*corev1.Pod)
+		if pod.Spec.NodeName == "" {
+			return nil
+		} else {
+			return []string{pod.Spec.NodeName}
+		}
+		// ...and if so, return it
+	}); err != nil {
+		return err
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Pod{}).
 		Complete(r)
