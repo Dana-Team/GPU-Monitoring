@@ -21,12 +21,6 @@ type GpuCollector struct {
 	Devices []*gonvml.Device
 }
 
-type PodSample struct {
-	pod *corev1.Pod
-	putil *gonvml.ProcessUtilizationSample
-
-}
-
 func NewGpuCollector(client client.Client) (*GpuCollector, error) {
 	devices, err := getDevices()
 	if err != nil {
@@ -159,7 +153,6 @@ func (c *GpuCollector) Collect(ch chan<- prometheus.Metric) {
 				n,
 				ns,
 			)
-
 		}
 	}
 }
