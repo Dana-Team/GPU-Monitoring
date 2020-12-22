@@ -18,12 +18,13 @@ package main
 
 import (
 	"flag"
-	"os"
-
+	"github.com/Dana-Team/GPU-Monitoring/collector"
+	"github.com/Dana-Team/gonvml"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -53,6 +54,8 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	gonvml.Init()
+	defer gonvml.Shutdown()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -75,7 +78,12 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
-
+	_, err = collector.NewGpuCollector(mgr.GetClient())
+	if err != nil {
+		setupLog.Error(err, "unable to gpu collector")
+		os.Exit(1)
+	}
+	//go gpuc.Run()
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
